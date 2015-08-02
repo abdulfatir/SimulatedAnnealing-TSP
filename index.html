@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Travelling Salesman Problem - Simulated Annealing</title>
+		<link rel="stylesheet" type="text/css" href="./styles/main.css" />
+		<link href='https://fonts.googleapis.com/css?family=Lato:400,bold' rel='stylesheet' type='text/css' />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+		<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	</head>
+	<body>
+			<div>
+				<div id="settings">
+					<h2><i class="fa fa-cog"></i> SETTINGS</h2>
+					<table>
+						<tbody>
+							<tr>
+								<td>Cities</td>
+								<td>
+								<input type="text" id="cities" value="10"></input>
+								</td>
+							</tr>
+							<tr>
+								<td>Initial Temperature</td>
+								<td>
+								<input type="text" id="temperature" value="0.1"></input>
+								</td>
+							</tr>
+							<tr>
+								<td>Absolute Zero</td>
+								<td>
+								<input type="text" id="abszero" value=".0001"></input>
+								</td>
+							</tr>
+							<tr>
+								<td>Cooling Rate</td>
+								<td>
+								<input type="text" id="coolrate" value="0.99999"></input>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<div style="margin: 15px auto; width: 100px; border: 1px solid black;">
+						<button id="solve">Solve</button>
+					</div>
+				</div>
+				<canvas id="tsp-canvas" width="700" height="600">
+					HTML5 Unsupported.
+				</canvas>
+			</div>
+		<script type="text/javascript" src="./scripts/anneal.js"></script>
+	</body>
+</html>
