@@ -94,6 +94,12 @@ let init = function() {
 	solveInterval = setInterval(solve, 10);
 }
 
+let stopIterating = function() {
+    if (solveInterval) {
+        clearInterval(solveInterval);
+    }
+}
+
 let solve = function() {
 	if(temperature > ABSOLUTE_ZERO) {
 		let currentSolutionCost = getCost(current);
@@ -122,7 +128,7 @@ let solve = function() {
         } else {
             sameSolutionIterations++;
             if (sameSolutionIterations > SOLUTION_NOT_CHANGED_STEPS) {
-                clearInterval(solveInterval);
+                stopIterating();
             }
         }
         
