@@ -133,9 +133,10 @@ let solve = function() {
         }
         
         temperature *= COOLING_RATE;
+    } else {
+        stopIterating();
     }
 
-    //$("#timeRunning").html(timeRunning++);
 }
 
 let paint = function() {
