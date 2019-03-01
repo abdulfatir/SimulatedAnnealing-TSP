@@ -2,160 +2,166 @@ var temprature = 0.1;
 var ABSOLUTE_ZERO = 1e-4;
 var COOLING_RATE = 0.999999;
 var CITIES = 50;
+var SOLUTION_NOT_CHANGED_STEPS = 100;
 var current = [];
-var best = [];
-var best_cost = 0;
+var bestSolution = [];
+var bestSolutionCost = 0;
+var timeRunning = 0;
+var sameSolutionIterations = 0;
+var solveInterval;
 
-$(document).ready(function()
-	{
-		$("#solve").click(function()
-			{
-				temperature = parseFloat($("#temperature").val());
-				ABSOLUTE_ZERO = parseFloat($("#abszero").val());
-				COOLING_RATE = parseFloat($("#coolrate").val());
-				CITIES = parseInt($("#cities").val());
-				init();
-			});
-	});
+$(document).ready(function() {
+    $("#btnSolve").click(function() {
+        temperature = parseFloat($("#temperature").val());
+        ABSOLUTE_ZERO = parseFloat($("#abszero").val());
+        COOLING_RATE = parseFloat($("#coolrate").val());
+        CITIES = parseInt($("#cities").val());
+        SOLUTION_NOT_CHANGED_STEPS = parseInt($("#solutionGoodEnoughSteps").val());
+        init();
+    });
+});
 
-var tsp_canvas = document.getElementById('tsp-canvas');
-var tsp_ctx = tsp_canvas.getContext("2d");
+var tspCanvas = document.getElementById('tsp-canvas');
+var tspContext = tspCanvas.getContext("2d");
 
-//init();
-
-function randomFloat(n)
-{
-	return (Math.random()*n);
+let randomFloat = function(n) {
+	return (Math.random() * n);
 }
 
-function randomInt(n)
-{
-	return Math.floor(Math.random()*(n));
+let randomInt = function(n) {
+	return Math.floor(Math.random() * (n));
 }
 
-function randomInteger(a,b)
-{
-	return Math.floor(Math.random()*(b-a)+a);
+let randomInteger = function(a,b) {
+	return Math.floor(Math.random() * (b - a) + a);
 }
 
-function deep_copy(array, to)
-{
-	var i = array.length;
-	while(i--)
-	{
+let deepCopy = function(array, to) {
+	let i = array.length;
+	while(i--) {
 		to[i] = [array[i][0],array[i][1]];
 	}
 }
 
-function getCost(route)
-{
-	var cost = 0;
-	for(var i=0; i< CITIES-1;i++)
-	{
-		cost = cost + getDistance(route[i], route[i+1]);
+let getCost = function(route) {
+	let cost = 0;
+	for(var i = 0; i < CITIES - 1; i++) {
+		cost += getDistance(route[i], route[i+1]);
 	}
-	cost = cost + getDistance(route[0],route[CITIES-1]);
+	cost += getDistance(route[0],route[CITIES-1]);
 	return cost;
 }
 
-function getDistance(p1, p2)
-{
-	del_x = p1[0] - p2[0];
-	del_y = p1[1] - p2[1];
-	return Math.sqrt((del_x*del_x) + (del_y*del_y));
+let getDistance = function(p1, p2) {
+	delX = p1[0] - p2[0];
+	delY = p1[1] - p2[1];
+	return Math.sqrt((delX * delX) + (delY * delY));
 }
 
-function mutate2Opt(route, i, j)
-{
-	var neighbor = [];
-	deep_copy(route, neighbor);
-	while(i != j)
-	{
-		var t = neighbor[j];
-		neighbor[j] = neighbor[i];
-		neighbor[i] = t;
+let mutate2Opt = function(route, i, j) {
+	let neighbourSolution = [];
+	deepCopy(route, neighbourSolution);
+	while(i != j) {
+		let t = neighbourSolution[j];
+		neighbourSolution[j] = neighbourSolution[i];
+		neighbourSolution[i] = t;
 
-		i = (i+1) % CITIES;
-		if (i == j)
-			break;
-		j = (j-1+CITIES) % CITIES;
+		i = (i + 1) % CITIES;
+		if (i == j) {
+            break;
+        }
+            
+		j = (j - 1 + CITIES) % CITIES;
 	}
-	return neighbor;
+	return neighbourSolution;
 }
 
-function acceptanceProbability(current_cost, neighbor_cost)
-{
-	if(neighbor_cost < current_cost)
-		return 1;
-	return Math.exp((current_cost - neighbor_cost)/temperature);
+let acceptanceProbability = function(currentSolutionCost, neighbourSolutionCost) {
+	if(neighbourSolutionCost < currentSolutionCost) {
+        return 1;
+    }
+        
+	return Math.exp((currentSolutionCost - neighbourSolutionCost) / temperature);
 }
 
-function init()
-{
-	for(var i=0;i<CITIES;i++)
-	{
-		current[i] = [randomInteger(10,tsp_canvas.width-10),randomInteger(10,tsp_canvas.height-10)];
+let init = function() {
+	for(var i = 0; i < CITIES; i++) {
+		current[i] = [randomInteger(10, tspCanvas.width - 10), randomInteger(10, tspCanvas.height - 10)];
 	}
 
-	deep_copy(current, best);
-	best_cost = getCost(best);
-	setInterval(solve, 10);
+	deepCopy(current, bestSolution);
+	bestSolutionCost = getCost(bestSolution);
+	solveInterval = setInterval(solve, 10);
 }
 
-function solve()
-{
-	if(temperature>ABSOLUTE_ZERO)
-	{
-		var current_cost = getCost(current);
-		var k = randomInt(CITIES);
-		var l = (k+1+ randomInt(CITIES - 2)) % CITIES;
-		if(k > l)
-		{
-			var tmp = k;
+let stopIterating = function() {
+    if (solveInterval) {
+        clearInterval(solveInterval);
+    }
+}
+
+let solve = function() {
+	if(temperature > ABSOLUTE_ZERO) {
+		let currentSolutionCost = getCost(current);
+		let k = randomInt(CITIES);
+        let l = (k + 1 + randomInt(CITIES - 2)) % CITIES;
+        
+		if(k > l) {
+			let tmp = k;
 			k = l;
 			l = tmp;
-		}
-		var neighbor = mutate2Opt(current, k, l);
-		var neighbor_cost = getCost(neighbor);
-		if(Math.random() < acceptanceProbability(current_cost, neighbor_cost))
-		{
-			deep_copy(neighbor, current);
-			current_cost = getCost(current);
-		}
-		if(current_cost < best_cost)
-		{
-			deep_copy(current, best);
-			best_cost = current_cost;
-			paint();
-		}
-		temperature *= COOLING_RATE;
-	}
+        }
+        
+		let neighbourSolution = mutate2Opt(current, k, l);
+        let neighbourSolutionCost = getCost(neighbourSolution);
+        
+		if(Math.random() < acceptanceProbability(currentSolutionCost, neighbourSolutionCost)) {
+			deepCopy(neighbourSolution, current);
+			currentSolutionCost = getCost(current);
+        }
+        
+		if(currentSolutionCost < bestSolutionCost) {
+			deepCopy(current, bestSolution);
+			bestSolutionCost = currentSolutionCost;
+            paint();
+            sameSolutionIterations = 0;
+        } else {
+            sameSolutionIterations++;
+            if (sameSolutionIterations > SOLUTION_NOT_CHANGED_STEPS) {
+                stopIterating();
+            }
+        }
+        
+        temperature *= COOLING_RATE;
+    } else {
+        stopIterating();
+    }
+
 }
 
-function paint()
-{
-	tsp_ctx.clearRect(0,0, tsp_canvas.width, tsp_canvas.height);
+let paint = function() {
+	tspContext.clearRect(0, 0, tspCanvas.width, tspCanvas.height);
 	// Cities
-	for(var i=0; i<CITIES; i++)
-	{
-		tsp_ctx.beginPath();
-		tsp_ctx.arc(best[i][0], best[i][1], 4, 0, 2*Math.PI);
-		tsp_ctx.fillStyle = "#0000ff";
-		tsp_ctx.strokeStyle = "#000";
-		tsp_ctx.closePath();
-		tsp_ctx.fill();
-		tsp_ctx.lineWidth=1;
-		tsp_ctx.stroke();
-	}
+	for(var i = 0; i < CITIES; i++) {
+		tspContext.beginPath();
+		tspContext.arc(bestSolution[i][0], bestSolution[i][1], 4, 0, 2 * Math.PI);
+		tspContext.fillStyle = "#0000ff";
+		tspContext.strokeStyle = "#000";
+		tspContext.closePath();
+		tspContext.fill();
+		tspContext.lineWidth=1;
+		tspContext.stroke();
+    }
+    
 	// Links
-	tsp_ctx.strokeStyle = "#ff0000";
-	tsp_ctx.lineWidth=2;
-	tsp_ctx.moveTo(best[0][0], best[0][1]);
-	for(var i=0; i<CITIES-1; i++)
-	{
-		tsp_ctx.lineTo(best[i+1][0], best[i+1][1]);
-	}
-	tsp_ctx.lineTo(best[0][0], best[0][1]);
-	tsp_ctx.stroke();
-	tsp_ctx.closePath();
+	tspContext.strokeStyle = "#ff0000";
+	tspContext.lineWidth = 2;
+	tspContext.moveTo(bestSolution[0][0], bestSolution[0][1]);
+	for(var i=0; i < CITIES - 1; i++) {
+		tspContext.lineTo(bestSolution[i+1][0], bestSolution[i+1][1]);
+    }
+    
+	tspContext.lineTo(bestSolution[0][0], bestSolution[0][1]);
+	tspContext.stroke();
+	tspContext.closePath();
 }
